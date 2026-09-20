@@ -118,3 +118,30 @@ export const loginUser = async (req, res) => {
         })
     }
 }
+
+export const refreshAccessToken = (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return res.status(401).json({
+                message: "Refresh token not found",
+                success: false
+            });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const accessToken = generateAccessToken(decoded);
+
+        return res.status(200).json({
+            message: "Access token refreshed successfully",
+            success: true,
+            accessToken: accessToken
+        });
+    } catch (error) {
+        console.error("Error refreshing access token:", error);
+        return res.status(401).json({
+            message: "Invalid refresh token",
+            success: false
+        });
+    }
+}
