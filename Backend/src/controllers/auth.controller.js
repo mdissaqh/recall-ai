@@ -36,3 +36,50 @@ export const registerUser = async (req, res) => {
         })
     }
 }
+
+export const loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: `${!email ? "Email is required" : ""} ${!password ? "Password is required" : ""}`.trim(),
+                success: false
+            })
+        }
+
+        const user = await userModel.findOne({ email }).select("+password");
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false
+            })
+        }
+
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                message: "Invalid password",
+                success: false
+            })
+        }
+
+        return res.status(200).json({
+            message: "User logged in successfully",
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                profilePicture: user.profilePicture,
+                authProvider: user.authProvider
+            }
+        });
+    } catch (error) {
+        console.error("Error logging in user:", error);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        })
+    }
+}
