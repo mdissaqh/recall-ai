@@ -1,4 +1,21 @@
 import userModel from "../models/user.model.js";
+import jwt from "jsonwebtoken";
+
+const generateRefreshToken = (user) => {
+    const refreshToken = jwt.sign({
+        id: user._id,
+        email: user.email
+    }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+    return refreshToken;
+}
+
+const generateAccessToken = (user) => {
+    const accessToken = jwt.sign({
+        id: user._id,
+        email: user.email
+    }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+    return accessToken;
+}
 
 export const registerUser = async (req, res) => {
     try {
@@ -22,7 +39,16 @@ export const registerUser = async (req, res) => {
             email,
             password
         });
-        
+
+        const refreshToken = generateRefreshToken(newUser);
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         return res.status(201).json({
             message: "User registered successfully",
             success: true,
@@ -63,6 +89,15 @@ export const loginUser = async (req, res) => {
                 success: false
             })
         }
+
+        const refreshToken = generateRefreshToken(user);
+        
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         return res.status(200).json({
             message: "User logged in successfully",
